@@ -1,0 +1,331 @@
+use sakila;
+
+-- SELECT film.title, category.name
+-- FROM ((film
+-- INNER JOIN film_category ON film.film_id = film_category.film_id)
+-- INNER JOIN category ON category.category_id = film_category.category_id);
+
+-- SELECT film.title, actor.first_name, actor.last_name
+-- FROM ((film
+-- INNER JOIN film_actor ON film.film_id = film_actor.film_id)
+-- INNER JOIN actor ON actor.actor_id = film_actor.actor_id);
+
+-- SELECT city.city, address.address, customer.first_name
+-- FROM ((city
+-- INNER JOIN address ON city.city_id = address.city_id)
+-- INNER JOIN customer ON customer.address_id = address.address_id);
+
+-- SELECT actor.first_name, actor.last_name, category.name
+-- FROM (((
+-- actor INNER JOIN film_actor ON actor.actor_id = film_actor.actor_id) 
+-- INNER JOIN film ON film.film_id = film_actor.film_id) 
+-- INNER JOIN film_category ON film_category.film_id = film.film_id) 
+-- INNER JOIN category ON category.category_id = film_category.category_id;
+
+-- DELIMITER $$
+
+-- CREATE PROCEDURE `insert_actor` (
+-- 	first_name varchar(45),
+--     last_name varchar(45)
+-- )
+-- BEGIN
+-- 	INSERT INTO actor (actor.first_name, actor.last_name) VALUES(first_name, last_name);
+--     SELECT LAST_INSERT_ID();
+-- END
+
+-- $$
+-- DELIMITER ;
+
+-- DELIMITER $$
+-- 
+-- CREATE PROCEDURE `film_by_duration` (
+-- 	 low smallint(5) unsigned,
+--      high smallint(5) unsigned
+-- )
+-- BEGIN
+-- 	SELECT film.title FROM film where film.length <= high and film.length >= low;
+-- END
+-- 
+-- $$
+-- DELIMITER ;
+
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+
+-- SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_NAME = 'film';
+-- alter table film_actor drop foreign key fk_film_actor_film;
+-- alter table film_category drop foreign key fk_film_category_film;
+-- alter table inventory drop foreign key fk_inventory_film;
+-- alter table film modify film_id smallint NOT NULL;
+-- alter table film drop primary key;
+-- alter table film drop index idx_fk_language_id;
+-- alter table film drop index idx_fk_original_language_id;
+-- alter table film drop index idx_title;
+-- alter table film drop foreign key fk_film_language;
+-- alter table film drop foreign key fk_film_language_original;
+-- alter table film_actor drop index idx_fk_film_id;
+-- alter table film_actor drop primary key;
+-- alter table film_actor drop foreign key fk_film_actor_actor;
+-- alter table film_category drop foreign key fk_film_category_category;
+-- alter table film modify film_id smallint NOT NULL;
+-- alter table actor modify actor_id smallint NOT NULL;
+-- alter table actor drop primary key;
+-- alter table actor drop index idx_actor_last_name;
+-- alter table category modify category_id smallint NOT NULL;
+-- alter table category drop primary key;
+-- alter table film_category drop primary key;
+-- alter table film_category drop index fk_film_category_category;
+
+-- CREATE INDEX film_idx_btree ON film (film_id) USING BTREE;
+-- ALTER TABLE actor engine=MEMORY;
+-- CREATE INDEX actor_idx_hash ON actor (actor_id) USING HASH;
+-- ALTER TABLE film_actor engine=MEMORY;
+-- CREATE INDEX film_actor_idx_hash ON film_actor (film_id) USING HASH;
+-- CREATE INDEX film_actor_idx_hash_2 ON film_actor (actor_id) USING HASH;
+
+-- alter table film drop index film_idx_btree;
+-- alter table actor drop index actor_idx_hash;
+-- alter table film_actor drop index film_actor_idx_hash;
+-- alter table film_actor drop index film_actor_idx_hash_2;
+-- alter table category drop index category_idx_hash;
+-- alter table film_category drop index film_category_idx_hash;
+-- alter table film_category drop index film_category_idx_hash_2;
+
+-- ALTER TABLE category engine=MEMORY;
+-- CREATE INDEX category_idx_hash ON category (category_id) USING HASH;
+-- ALTER TABLE film_category engine=MEMORY;
+-- CREATE INDEX film_category_idx_hash ON film_category (film_id) USING HASH;
+-- CREATE INDEX film_category_idx_hash_2 ON film_category (category_id) USING HASH;
+
+
+-- query 1 without indexing
+-- Last_query_cost | 323292.222030
+-- ----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000098 |
+-- | checking permissions | 0.000010 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000008 |
+-- | Opening tables       | 0.000030 |
+-- | init                 | 0.000038 |
+-- | System lock          | 0.000015 |
+-- | optimizing           | 0.000016 |
+-- | statistics           | 0.000032 |
+-- | preparing            | 0.000031 |
+-- | executing            | 0.000007 |
+-- | Sending data         | 0.102313 |
+-- | end                  | 0.000011 |
+-- | query end            | 0.000015 |
+-- | closing tables       | 0.000023 |
+-- | freeing items        | 0.000072 |
+-- | cleaning up          | 0.000013 |
+-- +----------------------+----------+
+
+-- query 1 with indexing(org)
+--  Last_query_cost | 1420.679234
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000098 |
+-- | checking permissions | 0.000011 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000008 |
+-- | Opening tables       | 0.000030 |
+-- | init                 | 0.000080 |
+-- | System lock          | 0.000014 |
+-- | optimizing           | 0.000042 |
+-- | statistics           | 0.000090 |
+-- | preparing            | 0.000025 |
+-- | executing            | 0.000007 |
+-- | Sending data         | 0.003319 |
+-- | end                  | 0.000017 |
+-- | query end            | 0.000014 |
+-- | closing tables       | 0.000017 |
+-- | freeing items        | 0.000101 |
+-- | cleaning up          | 0.000025 |
+-- +----------------------+----------+
+
+
+-- query 1 with film-btree, category-hash, film_category-hash
+-- Last_query_cost | 2394.799000
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000099 |
+-- | checking permissions | 0.000011 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000008 |
+-- | Opening tables       | 0.000472 |
+-- | init                 | 0.000038 |
+-- | System lock          | 0.000016 |
+-- | optimizing           | 0.000016 |
+-- | statistics           | 0.000052 |
+-- | preparing            | 0.000026 |
+-- | executing            | 0.000006 |
+-- | Sending data         | 0.005473 |
+-- | end                  | 0.000019 |
+-- | query end            | 0.000013 |
+-- | closing tables       | 0.000017 |
+-- | freeing items        | 0.000110 |
+-- | cleaning up          | 0.000031 |
+-- +----------------------+----------+
+
+-- query 2 without indexing
+-- Last_query_cost | 22068284.775015
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000136 |
+-- | checking permissions | 0.000013 |
+-- | checking permissions | 0.000022 |
+-- | checking permissions | 0.000011 |
+-- | Opening tables       | 0.000716 |
+-- | init                 | 0.000047 |
+-- | System lock          | 0.000018 |
+-- | optimizing           | 0.000016 |
+-- | statistics           | 0.000035 |
+-- | preparing            | 0.000189 |
+-- | executing            | 0.000008 |
+-- | Sending data         | 0.618372 |
+-- | end                  | 0.000010 |
+-- | query end            | 0.000036 |
+-- | closing tables       | 0.000012 |
+-- | freeing items        | 0.000067 |
+-- | cleaning up          | 0.000018 |
+-- +----------------------+----------+
+
+-- query 2 with indexing(org)
+-- Last_query_cost | 7892.932509
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000098 |
+-- | checking permissions | 0.000010 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000008 |
+-- | Opening tables       | 0.000048 |
+-- | init                 | 0.000046 |
+-- | System lock          | 0.000016 |
+-- | optimizing           | 0.000018 |
+-- | statistics           | 0.000114 |
+-- | preparing            | 0.000025 |
+-- | executing            | 0.000007 |
+-- | Sending data         | 0.027254 |
+-- | end                  | 0.000021 |
+-- | query end            | 0.000015 |
+-- | closing tables       | 0.000019 |
+-- | freeing items        | 0.000160 |
+-- | cleaning up          | 0.000045 |
+-- +----------------------+----------+
+
+-- query 2 with film-btree, actor-hash, film_actor-hash
+-- Last_query_cost | 13019.999000
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000144 |
+-- | checking permissions | 0.000010 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000007 |
+-- | Opening tables       | 0.000028 |
+-- | init                 | 0.000037 |
+-- | System lock          | 0.000016 |
+-- | optimizing           | 0.000017 |
+-- | statistics           | 0.000054 |
+-- | preparing            | 0.000026 |
+-- | executing            | 0.000007 |
+-- | Sending data         | 0.018324 |
+-- | end                  | 0.000011 |
+-- | query end            | 0.000007 |
+-- | closing tables       | 0.000010 |
+-- | freeing items        | 0.000066 |
+-- | cleaning up          | 0.000018 |
+-- +----------------------+----------+
+
+
+-- query 4 without indexing
+-- Last_query_cost | 34975862894.510250
+-- +----------------------+------------+
+-- | Status               | Duration   |
+-- +----------------------+------------+
+-- | starting             |   0.000115 |
+-- | checking permissions |   0.000011 |
+-- | checking permissions |   0.000006 |
+-- | checking permissions |   0.000005 |
+-- | checking permissions |   0.000005 |
+-- | checking permissions |   0.000007 |
+-- | Opening tables       |   0.000035 |
+-- | init                 |   0.000046 |
+-- | System lock          |   0.000017 |
+-- | optimizing           |   0.000018 |
+-- | statistics           |   0.001552 |
+-- | preparing            |   0.000133 |
+-- | executing            |   0.000009 |
+-- | Sending data         | 171.228781 |
+-- | end                  |   0.000011 |
+-- | query end            |   0.000064 |
+-- | closing tables       |   0.000012 |
+-- | freeing items        |   0.000022 |
+-- | cleaning up          |   0.000027 |
+-- +----------------------+------------+
+
+-- query 4 with indexing(org)
+-- Last_query_cost | 10093.767460
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000202 |
+-- | checking permissions | 0.000013 |
+-- | checking permissions | 0.000007 |
+-- | checking permissions | 0.000007 |
+-- | checking permissions | 0.000007 |
+-- | checking permissions | 0.000010 |
+-- | Opening tables       | 0.000046 |
+-- | init                 | 0.000061 |
+-- | System lock          | 0.000031 |
+-- | optimizing           | 0.000027 |
+-- | statistics           | 0.008240 |
+-- | preparing            | 0.000045 |
+-- | executing            | 0.000008 |
+-- | Sending data         | 0.023804 |
+-- | end                  | 0.000018 |
+-- | query end            | 0.000013 |
+-- | closing tables       | 0.000019 |
+-- | freeing items        | 0.000029 |
+-- | cleaning up          | 0.000054 |
+-- +----------------------+----------+
+
+-- query 4 with indexing btree on film_id and hashing on the rest
+-- Last_query_cost | 23821.999000
+-- +----------------------+----------+
+-- | Status               | Duration |
+-- +----------------------+----------+
+-- | starting             | 0.000115 |
+-- | checking permissions | 0.000010 |
+-- | checking permissions | 0.000006 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000005 |
+-- | checking permissions | 0.000007 |
+-- | Opening tables       | 0.000035 |
+-- | init                 | 0.000045 |
+-- | System lock          | 0.000019 |
+-- | optimizing           | 0.000018 |
+-- | statistics           | 0.001381 |
+-- | preparing            | 0.000050 |
+-- | executing            | 0.000009 |
+-- | Sending data         | 0.011094 |
+-- | end                  | 0.000012 |
+-- | query end            | 0.000010 |
+-- | closing tables       | 0.000013 |
+-- | freeing items        | 0.000021 |
+-- | cleaning up          | 0.000024 |
+-- +----------------------+----------+
+
+-- Procedure : film_by_duration
+-- Last_query_cost | 211.99900
+
+-- Procedure : insert_actor
+-- Last_query_cost | 0.000000
+
+

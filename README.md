@@ -1,1 +1,1 @@
-# Sakila-Database
+# sakila-db
